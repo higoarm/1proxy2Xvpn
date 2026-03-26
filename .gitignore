@@ -1,0 +1,18 @@
+# OpenVPN files (may contain credentials — never commit)
+ovpns/*.ovpn
+ovpns/auth.txt
+ovpns/*.key
+ovpns/*.crt
+ovpns/*.pem
+ovpns/*.p12
+
+# Generated HAProxy config
+haproxy.cfg
+haproxy.cfg.bak
+
+# Logs
+*.log
+
+# OS
+.DS_Store
+Thumbs.db
