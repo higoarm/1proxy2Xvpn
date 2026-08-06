@@ -1,0 +1,35 @@
+# =============================================================================
+# iptables-baseline.rules — Deny-by-default firewall applied at container boot
+#
+# Allows ONE thing besides loopback/established: outbound DNS for bootstrap.
+# The container needs to resolve the VPN server's hostname BEFORE the tunnel
+# exists. After resolution, the full Kill Switch (iptables_killswitch.sh)
+# overwrites these rules and removes the DNS bootstrap path (resolution
+# is then pinned via /etc/hosts).
+# =============================================================================
+*filter
+:INPUT DROP [0:0]
+:FORWARD DROP [0:0]
+:OUTPUT DROP [0:0]
+
+# Loopback always allowed
+-A INPUT  -i lo -j ACCEPT
+-A OUTPUT -o lo -j ACCEPT
+
+# Established/related connections
+-A INPUT  -m conntrack --ctstate ESTABLISHED,RELATED -j ACCEPT
+-A OUTPUT -m conntrack --ctstate ESTABLISHED,RELATED -j ACCEPT
+
+# DNS bootstrap — required to resolve VPN server hostname before tun0 exists.
+# This is closed by the full Kill Switch after resolution is pinned in /etc/hosts.
+-A OUTPUT -p udp --dport 53 -j ACCEPT
+-A OUTPUT -p tcp --dport 53 -j ACCEPT
+
+COMMIT
+
+*nat
+:PREROUTING ACCEPT [0:0]
+:INPUT ACCEPT [0:0]
+:OUTPUT ACCEPT [0:0]
+:POSTROUTING ACCEPT [0:0]
+COMMIT
