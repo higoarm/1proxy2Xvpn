@@ -1,0 +1,114 @@
+# =============================================================================
+# Observability stack (LITE) — Prometheus + Grafana + cAdvisor (optimized)
+#
+# This is the default lean stack: 3 services instead of 7. It keeps everything
+# you actually look at (pool health, throughput, per-container CPU/mem) and
+# drops the components that added cost without practical value at 285 containers:
+#   - Loki + Promtail  → use `docker logs <name>` / `1proxy2xvpn logs`
+#   - Alertmanager     → no notification target was configured (alerts went nowhere)
+#   - node-exporter    → host metrics weren't being monitored
+#
+# cAdvisor is kept but TUNED: housekeeping_interval raised from the 1s default
+# to 30s, docker_only mode, and expensive per-disk/per-fs metrics disabled.
+# This cuts cAdvisor CPU by roughly 20-30x at scale.
+#
+# Want the full stack with logs + alerting? Use:
+#   docker compose -f docker-compose.observability.full.yml up -d
+#
+# Start: 1proxy2xvpn observability up
+# Stop : 1proxy2xvpn observability down
+# =============================================================================
+name: 1proxy2xvpn-observability
+
+services:
+  # ── Metrics collection ──────────────────────────────────────────────────────
+  prometheus:
+    image: prom/prometheus:v2.51.0
+    container_name: 1p2v-prometheus
+    restart: unless-stopped
+    user: "65534:65534"
+    command:
+      - "--config.file=/etc/prometheus/prometheus.yml"
+      - "--storage.tsdb.path=/prometheus"
+      # Retention trimmed 30d → 7d: at 285 targets this saves significant disk.
+      - "--storage.tsdb.retention.time=7d"
+      - "--web.console.libraries=/usr/share/prometheus/console_libraries"
+      - "--web.console.templates=/usr/share/prometheus/consoles"
+      - "--web.enable-lifecycle"
+    volumes:
+      - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus-data:/prometheus
+    ports:
+      - "127.0.0.1:9090:9090"
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    networks:
+      - observability
+    mem_limit: 512m
+
+  # ── Container metrics (CPU/mem/net per container) — TUNED for scale ──────────
+  cadvisor:
+    image: gcr.io/cadvisor/cadvisor:v0.49.1
+    container_name: 1p2v-cadvisor
+    restart: unless-stopped
+    privileged: true
+    devices:
+      - /dev/kmsg:/dev/kmsg
+    volumes:
+      - /:/rootfs:ro
+      - /var/run:/var/run:ro
+      - /sys:/sys:ro
+      - /var/lib/docker:/var/lib/docker:ro
+      - /dev/disk/:/dev/disk:ro
+    command:
+      # The single biggest win: default housekeeping is 1s. At 285 containers
+      # that's a relentless scrape loop. 30s is plenty for a dashboard.
+      - "--housekeeping_interval=30s"
+      - "--max_housekeeping_interval=35s"
+      - "--global_housekeeping_interval=30s"
+      # Only watch Docker containers, skip raw cgroups.
+      - "--docker_only=true"
+      # Disable expensive metric families we don't chart.
+      - "--disable_metrics=disk,diskIO,tcp,udp,percpu,sched,process,hugetlb,referenced_memory,cpu_topology,resctrl"
+      - "--store_container_labels=false"
+      # Only expose the container labels we actually filter on in Grafana.
+      - "--whitelisted_container_labels=1proxy2xvpn.managed,1proxy2xvpn.ovpn"
+    ports:
+      - "127.0.0.1:8085:8080"
+    networks:
+      - observability
+    mem_limit: 384m
+
+  # ── Visualization ───────────────────────────────────────────────────────────
+  grafana:
+    image: grafana/grafana:10.4.1
+    container_name: 1p2v-grafana
+    restart: unless-stopped
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=changeme
+      - GF_USERS_ALLOW_SIGN_UP=false
+      - GF_ANALYTICS_REPORTING_ENABLED=false
+      - GF_ANALYTICS_CHECK_FOR_UPDATES=false
+      # Disable alerting engine (we removed Alertmanager).
+      - GF_UNIFIED_ALERTING_ENABLED=false
+      - GF_ALERTING_ENABLED=false
+    volumes:
+      - ./grafana/dashboards:/var/lib/grafana/dashboards:ro
+      - ./grafana/provisioning:/etc/grafana/provisioning:ro
+      - grafana-data:/var/lib/grafana
+    ports:
+      - "127.0.0.1:3000:3000"
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    networks:
+      - observability
+    mem_limit: 256m
+
+volumes:
+  prometheus-data:
+  grafana-data:
+
+networks:
+  observability:
+    name: 1proxy2xvpn-observability
+    driver: bridge

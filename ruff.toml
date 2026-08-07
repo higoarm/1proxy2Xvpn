@@ -1,0 +1,18 @@
+# =============================================================================
+# ruff.toml — Python lint configuration for 1proxy2Xvpn
+#
+# Pins the rule set so CI results don't drift when ruff releases new defaults.
+# We enable the high-signal rules (pyflakes errors, import hygiene/sorting,
+# pycodestyle) and leave out opinionated stylistic rules that don't fit this
+# codebase — e.g. BLE001 (the retry handler intentionally catches broad
+# exceptions to retry on any network error) and RUF012.
+# =============================================================================
+
+line-length = 120
+target-version = "py310"
+
+[lint]
+select = ["E", "F", "I", "W", "UP"]
+ignore = [
+    "E501",  # line length — not worth failing CI over
+]

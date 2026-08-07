@@ -1,0 +1,25 @@
+[Unit]
+Description=1proxy2xvpn — distributed VPN proxy
+Documentation=https://github.com/higoarm/1proxy2Xvpn
+Requires=docker.service
+After=docker.service network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+WorkingDirectory=/opt/1proxy2xvpn
+ExecStart=/usr/local/bin/1proxy2xvpn up
+ExecStop=/usr/local/bin/1proxy2xvpn down
+ExecReload=/usr/local/bin/1proxy2xvpn up
+TimeoutStartSec=600
+TimeoutStopSec=120
+
+# Security hardening
+ProtectSystem=full
+ProtectHome=true
+NoNewPrivileges=true
+PrivateTmp=true
+
+[Install]
+WantedBy=multi-user.target
