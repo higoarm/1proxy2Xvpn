@@ -53,6 +53,7 @@ Highlights:
 - [Quick Start](#quick-start)
 - [CLI Reference](#cli-reference)
 - [IP Rotation](#ip-rotation)
+- [Bug Bounty Use Cases](#bug-bounty-use-cases)
 - [Integration with Security Tools](#integration-with-security-tools)
 - [Observability](#observability)
 - [Ethical Use](#ethical-use)
@@ -230,6 +231,30 @@ Force a fresh IP on a specific container, or pull a burned IP out of the pool:
 
 ![](https://raw.githubusercontent.com/andreasbm/readme/master/assets/lines/aqua.png)
 
+## Bug Bounty Use Cases
+
+The IP diversity provided by the pool maps directly onto common Bug Bounty and
+authorized-testing needs. All of the below assume you have **explicit permission**
+to test the target (see [Ethical Use](#ethical-use)).
+
+| Use case | How the tool helps |
+|---|---|
+| **IP ban bypass** | When a target blocks your address, requests keep flowing through the other VPN exits — a banned IP is a single container you can `blacklist` and skip. |
+| **Rate-limit bypass** | Per-IP throttling is spread across N exits, so the aggregate throughput multiplies while each individual IP stays under the limit. |
+| **Automatic IP rotation in recon pipelines** | Point your recon chain at `http://localhost:9999`; every connection round-robins to a fresh IP with no manual switching. |
+| **Vulnerability scanning (Nuclei) with rotating IPs** | Run Nuclei through the proxy so template checks come from many IPs, reducing WAF detection and per-IP blocks. |
+| **Directory/parameter brute-force (ffuf, dirsearch, gobuster)** | High-volume fuzzing distributes across the pool, avoiding the per-IP rate walls that normally throttle brute-force. |
+| **SQL injection testing (sqlmap) with rotating IPs** | Route sqlmap via the HTTP proxy so injection payloads originate from varied IPs during long runs. |
+| **High-scale parallel scanning with distinct IPs** | Launch many parallel workers, each exiting through a different VPN IP for wide, fast coverage. |
+| **Nmap via SOCKS5 (TCP connect scans)** | Tunnel `nmap -sT` through the SOCKS5 endpoint to scan from a VPN exit instead of your real address. |
+| **Distributed authentication brute-force (Hydra)** | Spread credential attempts across multiple IPs (via SOCKS5/proxychains) to avoid single-IP lockouts. |
+
+> Concrete commands for each tool are in
+> [Integration with Security Tools](#integration-with-security-tools) and
+> [`docs/INTEGRATIONS.md`](docs/INTEGRATIONS.md).
+
+![](https://raw.githubusercontent.com/andreasbm/readme/master/assets/lines/aqua.png)
+
 ## Integration with Security Tools
 
 ### Nuclei
@@ -240,6 +265,15 @@ nuclei -u target.com -proxy http://localhost:9999 -type http
 ### ffuf
 ```bash
 ffuf -u "https://target.com/FUZZ" -w wordlist.txt -x http://localhost:9999
+```
+
+### dirsearch / gobuster
+```bash
+# dirsearch (HTTP proxy)
+dirsearch -u https://target.com --proxy http://localhost:9999
+
+# gobuster (HTTP proxy)
+gobuster dir -u https://target.com -w wordlist.txt --proxy http://localhost:9999
 ```
 
 ### sqlmap
@@ -256,6 +290,16 @@ nmap -sT -Pn -p 80,443,8080,8443 --proxies socks5://localhost:9998 target.com
 ```
 > `--proxies` only works with TCP connect scans (`-sT`). SYN/UDP/OS-detection
 > bypass the proxy and are not routed through the VPN pool.
+
+### Hydra (via SOCKS5 / proxychains)
+Hydra has no native proxy flag, so route it through `proxychains` pointed at the
+SOCKS5 endpoint (enable SOCKS5 first with `ENABLE_SOCKS5=true ./1proxy2xvpn up`):
+```bash
+# /etc/proxychains4.conf → add under [ProxyList]:
+#   socks5 127.0.0.1 9998
+proxychains4 hydra -L users.txt -P passwords.txt target.com http-post-form \
+  "/login:user=^USER^&pass=^PASS^:Invalid"
+```
 
 ### Burp Suite / Caido
 ```

@@ -16,6 +16,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [2.4.1] — 2026-08-07
+
+### Added
+- **Bug Bounty Use Cases** section in the README: a table mapping the tool to
+  common authorized-testing scenarios (IP-ban bypass, rate-limit bypass, recon
+  pipeline rotation, Nuclei/ffuf/sqlmap/nmap/Hydra with rotating IPs, etc.).
+- Integration examples for **dirsearch, gobuster, and Hydra** (via proxychains
+  over SOCKS5).
+
+---
+
 ## [2.4.0] — 2026-08-07
 
 ### Added
