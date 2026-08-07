@@ -1,0 +1,146 @@
+#!/bin/bash
+# =============================================================================
+# 1proxy2xvpn — Unified CLI
+# Dispatches subcommands to scripts/NN_*.sh
+# =============================================================================
+set -e
+
+# Resolve script location even through symlinks
+SCRIPT="${BASH_SOURCE[0]}"
+while [ -L "${SCRIPT}" ]; do
+    DIR="$( cd -P "$( dirname "${SCRIPT}" )" && pwd )"
+    SCRIPT="$(readlink "${SCRIPT}")"
+    [[ "${SCRIPT}" != /* ]] && SCRIPT="${DIR}/${SCRIPT}"
+done
+PROJECT_ROOT="$( cd -P "$( dirname "${SCRIPT}" )" && pwd )"
+export PROJECT_ROOT
+
+SCRIPTS_DIR="${PROJECT_ROOT}/scripts"
+
+usage() {
+    cat << 'USAGE'
+1proxy2xvpn — Distributed HTTP/SOCKS proxy through OpenVPN tunnels
+
+USAGE:
+    1proxy2xvpn <command> [options]
+
+COMMANDS:
+    setup                       Install dependencies, tune kernel, prepare host
+    build [--no-cache]          Build the Docker image
+    up                          Start all containers (one per .ovpn file)
+    down                        Stop and remove all containers
+    destroy [--purge]           Tear down (--purge also removes image)
+
+    haproxy [--dry-run]         Generate haproxy.cfg from running containers
+            [--only-up]         Include only containers with active VPN
+            [--public-stats]    Bind stats panel to 0.0.0.0 (default: 127.0.0.1)
+
+    status                      Show status of all containers (table)
+           [--json|--csv]       Machine-readable output
+           [-t N] [-p N]        Override timeout / parallelism
+
+    logs [container|all]        Stream logs (default: all containers)
+    rotate [container|--burned] Force IP rotation by restarting
+
+    blacklist add <name|ip>     Disable container in HAProxy rotation
+              remove <name|ip>  Restore container to rotation
+              list              Show blacklisted containers
+              clear             Restore all containers
+
+    observability up            Start Prometheus + Grafana + cAdvisor (add 'full' for logs)
+    observability down          Stop observability stack
+
+    uninstall [--yes] [--purge] Remove 1proxy2Xvpn from the host completely
+    install-cli [--remove]      Install/remove the global 1proxy2xvpn command
+    version                     Print version
+    help                        Show this message
+
+EXAMPLES:
+    # First-time setup
+    sudo 1proxy2xvpn setup
+    1proxy2xvpn build
+    cp ~/Downloads/*.ovpn ovpns/
+    1proxy2xvpn up
+    sudo 1proxy2xvpn haproxy
+
+    # Daily usage
+    1proxy2xvpn status
+    curl -x http://localhost:9999 https://api.ipify.org
+
+    # Targeted region (after haproxy generation)
+    curl -x http://localhost:9999 -H "X-Region: eu" https://target.com
+
+    # Burn an IP that got banned
+    1proxy2xvpn blacklist add 45.67.96.16
+    1proxy2xvpn rotate --burned
+
+DOCS:
+    https://github.com/higoarm/1proxy2Xvpn
+USAGE
+}
+
+VERSION="2.4.2"
+
+CMD="${1:-help}"
+shift 2>/dev/null || true
+
+case "${CMD}" in
+    setup)        exec bash "${SCRIPTS_DIR}/01_setup.sh"     "$@" ;;
+    build)        exec bash "${SCRIPTS_DIR}/02_build.sh"     "$@" ;;
+    up|start)     exec bash "${SCRIPTS_DIR}/03_up.sh"        "$@" ;;
+    down|stop)    exec bash "${SCRIPTS_DIR}/07_destroy.sh"   "$@" ;;
+    destroy|rm)   exec bash "${SCRIPTS_DIR}/07_destroy.sh"   "$@" ;;
+    haproxy|lb)   exec bash "${SCRIPTS_DIR}/04_haproxy.sh"   "$@" ;;
+    status|ps)    exec bash "${SCRIPTS_DIR}/05_status.sh"    "$@" ;;
+    logs)         exec bash "${SCRIPTS_DIR}/06_logs.sh"      "$@" ;;
+    rotate)       exec bash "${SCRIPTS_DIR}/09_rotate.sh"    "$@" ;;
+    blacklist|bl) exec bash "${SCRIPTS_DIR}/08_blacklist.sh" "$@" ;;
+    uninstall)    exec bash "${SCRIPTS_DIR}/10_uninstall.sh" "$@" ;;
+    install-cli)  exec bash "${SCRIPTS_DIR}/11_install_cli.sh" "$@" ;;
+    observability|obs)
+        SUBCMD="${1:-up}"; shift 2>/dev/null || true
+        cd "${PROJECT_ROOT}/observability"
+        # Default to the lean stack; `full` opts into logs + alerting.
+        COMPOSE_FILE="docker-compose.observability.yml"
+        if [ "${1:-}" = "full" ] || [ "${MODE:-}" = "full" ]; then
+            COMPOSE_FILE="docker-compose.observability.full.yml"
+        fi
+        case "${SUBCMD}" in
+            up)
+                echo "Starting observability (${COMPOSE_FILE##*observability.})..."
+                docker compose -f "${COMPOSE_FILE}" up -d
+                # Grafana takes ~15-30s to become ready. Wait and report, so the
+                # user doesn't hit http://localhost:3000 before it's up.
+                printf "Waiting for Grafana to become ready"
+                for _ in $(seq 1 30); do
+                    if curl -sf -o /dev/null http://localhost:3000/api/health 2>/dev/null; then
+                        printf "\n"
+                        echo "  Grafana    : http://localhost:3000  (admin / changeme)"
+                        echo "  Prometheus : http://localhost:9090"
+                        break
+                    fi
+                    printf "."
+                    sleep 2
+                done
+                if ! curl -sf -o /dev/null http://localhost:3000/api/health 2>/dev/null; then
+                    printf "\n"
+                    echo "  Grafana is still starting. Give it a few more seconds, then open"
+                    echo "  http://localhost:3000  — check 'docker logs 1p2v-grafana' if it doesn't load."
+                fi
+                ;;
+            down)
+                # Bring down both variants so nothing is left running.
+                docker compose -f docker-compose.observability.yml down 2>/dev/null
+                docker compose -f docker-compose.observability.full.yml down 2>/dev/null
+                ;;
+            *)    echo "Use: observability {up|down} [full]"; exit 1 ;;
+        esac
+        ;;
+    version|-v|--version)  echo "1proxy2xvpn v${VERSION}" ;;
+    help|-h|--help|"")     usage ;;
+    *)
+        echo "Unknown command: ${CMD}" >&2
+        echo "Run '1proxy2xvpn help' for usage" >&2
+        exit 1
+        ;;
+esac
