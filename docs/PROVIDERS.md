@@ -45,23 +45,38 @@ remote united-states-newyork.expressnetw.com 1195
 
 ### Credentials
 
-Each `.ovpn` requires the same OpenVPN username/password. Place them in `secrets/<filename>.auth`:
+Keep your credentials file **inside `ovpns/`**, next to the `.ovpn` files. That
+directory is already mounted into every container (at `/ovpn`), so OpenVPN finds
+the file with no extra configuration.
+
+**1. Create the credentials file in `ovpns/`** (two lines: username, then
+password):
 
 ```bash
-# For my_expressvpn_us_newyork_udp.ovpn:
-cat > secrets/my_expressvpn_us_newyork_udp.auth << EOF
+cat > ovpns/authvpn.txt << EOF
 your_openvpn_username
 your_openvpn_password
 EOF
-chmod 0600 secrets/my_expressvpn_us_newyork_udp.auth
+chmod 0600 ovpns/authvpn.txt
 ```
 
-OR add the same auth file for all servers using a shared file (less secure):
+**2. Reference it in your `.ovpn`** using the container path (or a relative
+name):
 
-```bash
-# For all configs to share one auth file, add to each .ovpn:
-echo "auth-user-pass /ovpn/auth.txt" >> ovpns/my_expressvpn_us_newyork_udp.ovpn
 ```
+auth-user-pass /ovpn/authvpn.txt
+```
+
+That's it. On `./1proxy2xvpn up`, the tool validates the file exists in `ovpns/`
+and warns early if it's missing. All ExpressVPN servers share the same OpenVPN
+username/password, so one `authvpn.txt` can be referenced by every `.ovpn`.
+
+> - `/ovpn` is where `ovpns/` is mounted inside the container, and it's also the
+>   working directory — so `auth-user-pass authvpn.txt` (relative) works too.
+> - Credentials in `ovpns/` are covered by `.gitignore` patterns for secrets;
+>   double-check they're not tracked before pushing (`git status`).
+> - Get the OpenVPN username/password from ExpressVPN's **Manual Configuration**
+>   page — they are **different** from your account email/password.
 
 ### Recommended servers for Bug Bounty
 

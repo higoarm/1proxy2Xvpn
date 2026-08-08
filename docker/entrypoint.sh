@@ -128,6 +128,14 @@ if ! grep -q '^redirect-gateway' "${OVPN_FILE}"; then
     OPENVPN_EXTRA+=(--redirect-gateway def1 bypass-dhcp)
 fi
 
+# ── Credentials ───────────────────────────────────────────────────────────────
+# We do NOT inject any auth-user-pass directive. The .ovpn file is the single
+# source of truth: if it references a credentials file (e.g.
+# `auth-user-pass /path/to/creds.txt`), OpenVPN reads it as written. The
+# launcher (03_up.sh) makes sure that referenced path is visible inside the
+# container by bind-mounting its directory at the same path. This keeps the
+# tool from interfering with the user's chosen credential location.
+
 # NOTE: We intentionally do NOT inject `block-outside-dns` — it is a
 # Windows-only directive that OpenVPN 2.6+ rejects on Linux. DNS leak
 # prevention on Linux is achieved by:

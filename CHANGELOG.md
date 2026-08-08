@@ -16,6 +16,47 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [2.4.5] — 2026-08-08
+
+### Changed
+- Credentials file example renamed from `conecta.txt` to `authvpn.txt` across
+  the docs and launcher comments. Any filename still works — this only changes
+  the suggested name. Reference it as `auth-user-pass /ovpn/authvpn.txt`.
+
+---
+
+## [2.4.4] — 2026-08-08
+
+### Changed
+- **Credentials now live inside `ovpns/`**, next to the `.ovpn` files. That
+  directory is already mounted at `/ovpn` in every container, so no extra mount
+  is needed. Reference them in your `.ovpn` as `auth-user-pass /ovpn/conecta.txt`
+  (or a relative `conecta.txt`). The launcher validates the file exists in
+  `ovpns/` and warns early if it's missing.
+- The tool no longer injects any `auth-user-pass` directive — the `.ovpn` is the
+  single source of truth for credentials.
+
+### Security
+- `.gitignore` now excludes **all** of `ovpns/` (except `.gitkeep`), so
+  credential files of any name (e.g. `conecta.txt`) can never be committed.
+
+---
+
+## [2.4.3] — 2026-08-08
+
+### Fixed
+- **Containers failed to connect for providers requiring username/password**
+  (ExpressVPN, NordVPN, etc.). The launcher mounted the credentials at
+  `/ovpn/auth.txt` but the entrypoint never passed `--auth-user-pass` to
+  OpenVPN, so configs with an `auth-user-pass` directive tried to prompt on a
+  non-interactive console and the tunnel never came up (containers restarted in
+  a loop). The entrypoint now injects `--auth-user-pass /ovpn/auth.txt` when the
+  file is present, and prints a clear, actionable warning when a config needs
+  credentials but none were provided. Providers that embed credentials inline
+  (e.g. PIA) are unaffected.
+
+---
+
 ## [2.4.2] — 2026-08-07
 
 ### Fixed

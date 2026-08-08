@@ -119,15 +119,36 @@ for OVPN_PATH in "${OVPN_FILES[@]}"; do
     NAME=$(ovpn_to_container_name "${OVPN_PATH}")
     SOCKS_PORT=$((PORT + 10000))
 
-    # Look for matching auth file (per-VPN, isolated)
-    # Note: many providers (PIA, NordVPN with bulk download) reference shared
-    # files (CA certs, CRL, auth file) from within the .ovpn — these MUST be
-    # mountable alongside the .ovpn. We mount the whole ovpns/ directory
-    # read-only and pass the specific .ovpn filename as the command.
+    # ── Credentials (kept inside ovpns/, alongside the .ovpn files) ───────────
+    # Credentials live in ovpns/ next to the .ovpn. That directory is already
+    # mounted read-only at /ovpn inside the container, so no extra mount is
+    # needed. Reference them in your .ovpn as either:
+    #     auth-user-pass /ovpn/authvpn.txt      (container path)
+    #   or
+    #     auth-user-pass authvpn.txt            (relative to /ovpn, the workdir)
+    # We validate the referenced file exists in ovpns/ and warn early if not.
     AUTH_FLAG=""
-    AUTH_NAME="${OVPN_FILE%.ovpn}.auth"
-    if [ -f "${SECRETS_DIR}/${AUTH_NAME}" ]; then
-        AUTH_FLAG="-v $(realpath "${SECRETS_DIR}/${AUTH_NAME}"):/ovpn/auth.txt:ro"
+    AUTH_PATH=$(awk '/^[[:space:]]*auth-user-pass[[:space:]]+/ {print $2; exit}' "${OVPN_DIR}/${OVPN_FILE}" 2>/dev/null)
+    if [ -n "${AUTH_PATH}" ]; then
+        # Resolve where the referenced file should be on the host (in ovpns/).
+        case "${AUTH_PATH}" in
+            /ovpn/*)  HOST_AUTH="${OVPN_DIR}/${AUTH_PATH#/ovpn/}" ;;  # container path
+            /*)       HOST_AUTH="${AUTH_PATH}" ;;                      # other absolute path
+            *)        HOST_AUTH="${OVPN_DIR}/${AUTH_PATH}" ;;          # relative to /ovpn
+        esac
+        if [ ! -f "${HOST_AUTH}" ]; then
+            warn "[${NAME}] .ovpn references credentials '${AUTH_PATH}' but '${HOST_AUTH}' was not found."
+            warn "[${NAME}] Place the credentials file in ${OVPN_DIR}/ (next to the .ovpn) — OpenVPN will fail to authenticate otherwise."
+        fi
+        # If the path is absolute AND outside ovpns/, mount its dir so OpenVPN
+        # can still reach it. Paths inside ovpns/ need no extra mount.
+        case "${AUTH_PATH}" in
+            /ovpn/*|/*)
+                if [ "${AUTH_PATH#/ovpn/}" = "${AUTH_PATH}" ] && [ -f "${AUTH_PATH}" ]; then
+                    AUTH_FLAG="-v $(dirname "${AUTH_PATH}"):$(dirname "${AUTH_PATH}"):ro"
+                fi
+                ;;
+        esac
     fi
 
     # Build SOCKS port mapping conditionally
