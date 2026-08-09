@@ -16,6 +16,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [2.4.6] — 2026-08-08
+
+### Changed
+- **Quick Start simplified.** Removed the optional `install-cli` step from the
+  README (it was causing confusion) and added `newgrp docker` right after
+  `setup`, so a fresh Docker install picks up the new group membership and the
+  following commands don't fail with a `docker.sock` permission error. The
+  `install-cli` command still exists for those who want a global command.
+
+---
+
 ## [2.4.5] — 2026-08-08
 
 ### Changed

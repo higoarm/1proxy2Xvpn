@@ -148,13 +148,12 @@ git clone https://github.com/higoarm/1proxy2Xvpn.git && cd 1proxy2Xvpn
 # 2. Make the CLI executable
 chmod +x 1proxy2xvpn scripts/*.sh docker/*.sh
 
-# 3. (Optional) Install a global `1proxy2xvpn` command
-#    Diagnoses PATH/sudo issues automatically. If you skip this, use
-#    `./1proxy2xvpn` from the project directory (as shown below).
-sudo ./1proxy2xvpn install-cli
-
-# 4. Run setup (installs Docker, HAProxy, tunes the kernel)
+# 3. Run setup (installs Docker, HAProxy, tunes the kernel)
 sudo ./1proxy2xvpn setup
+
+# 4. Apply your new docker group membership (needed on a fresh Docker install,
+#    otherwise the next commands fail with a docker.sock permission error)
+newgrp docker
 
 # 5. Add your .ovpn files
 cp /path/to/your/*.ovpn ovpns/
@@ -172,12 +171,16 @@ sudo ./1proxy2xvpn haproxy --only-up
 for i in {1..10}; do curl -s -x http://localhost:9999 https://api.ipify.org; echo; done
 ```
 
+> On a machine where Docker was just installed, your user isn't in the `docker`
+> group yet for the current shell. `newgrp docker` applies it immediately;
+> alternatively, log out and back in. Without this, `build` and `up` fail with
+> `permission denied ... docker.sock`.
+
 ![](https://raw.githubusercontent.com/andreasbm/readme/master/assets/lines/aqua.png)
 
 ## CLI Reference
 
-> Run the CLI as `./1proxy2xvpn` from the project directory. If you installed it
-> globally with `install-cli`, drop the `./` and call `1proxy2xvpn` from anywhere.
+> Run the CLI as `./1proxy2xvpn` from the project directory.
 
 ```
 ./1proxy2xvpn setup                     Install dependencies, tune kernel, prepare host
@@ -199,7 +202,6 @@ for i in {1..10}; do curl -s -x http://localhost:9999 https://api.ipify.org; ech
 ./1proxy2xvpn observability up [full]   Start Prometheus + Grafana + cAdvisor (full adds logs)
 ./1proxy2xvpn observability down        Stop the observability stack
 
-./1proxy2xvpn install-cli [--remove]    Install/remove the global command
 ./1proxy2xvpn uninstall [--yes|--purge] Remove 1proxy2Xvpn from the host completely
 ./1proxy2xvpn version                   Print version
 ```
