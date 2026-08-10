@@ -16,6 +16,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [2.4.8] — 2026-08-10
+
+### Changed
+- Demo section now uses GitHub-native embedded video (upload the .mp4 directly)
+  instead of YouTube thumbnail links, so the videos play inside the README
+  without leaving the page. Captions kept; placeholders mark where to drop each
+  file in the GitHub web editor.
+
+---
+
 ## [2.4.7] — 2026-08-09
 
 ### Added

@@ -48,20 +48,17 @@ Highlights:
 
 **Installation** — clone, setup, and build from a fresh machine:
 
-<p align="center">
-  <a href="https://youtu.be/LSJJPieYYcM">
-    <img src="https://img.youtube.com/vi/LSJJPieYYcM/hqdefault.jpg" alt="Installation walkthrough" width="600">
-  </a>
-</p>
+<!-- UPLOAD-VIDEO-1: On GitHub, edit this file in the web editor and drag your
+     installation .mp4 onto the line below. GitHub replaces this comment area
+     with an embedded video player. -->
+
 
 **IP rotation in action** — health check, then 10 requests each returning a
 different exit IP through the VPN pool:
 
-<p align="center">
-  <a href="https://youtu.be/1V7Zy1eQDzY">
-    <img src="https://img.youtube.com/vi/1V7Zy1eQDzY/hqdefault.jpg" alt="IP rotation demo — 10 requests, 10 different IPs" width="600">
-  </a>
-</p>
+<!-- UPLOAD-VIDEO-2: Drag your IP-rotation .mp4 onto the line below in the
+     GitHub web editor. -->
+
 
 ![](https://raw.githubusercontent.com/andreasbm/readme/master/assets/lines/aqua.png)
 
