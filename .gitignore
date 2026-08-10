@@ -1,0 +1,62 @@
+# =============================================================================
+# .gitignore — Never commit credentials or generated configs
+# =============================================================================
+
+# ── OpenVPN configs and credentials (USER-PROVIDED, often contain auth keys) ──
+# ovpns/ holds your personal .ovpn configs AND credential files (any name,
+# e.g. authvpn.txt). None of it should ever be committed — ignore everything
+# except the .gitkeep placeholder.
+ovpns/*
+!ovpns/.gitkeep
+
+# ── Per-VPN auth files ────────────────────────────────────────────────────────
+secrets/*
+!secrets/.gitkeep
+
+# ── Generated HAProxy configs ─────────────────────────────────────────────────
+haproxy.cfg
+haproxy.cfg.bak
+
+# ── Environment overrides (may contain custom paths/ports) ────────────────────
+.env
+.env.local
+.env.*.local
+
+# ── Logs ──────────────────────────────────────────────────────────────────────
+*.log
+logs/
+*.log.gz
+
+# ── Python (middleware/) ──────────────────────────────────────────────────────
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+.venv/
+venv/
+env/
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+*.egg-info/
+
+# ── Editors and OS ────────────────────────────────────────────────────────────
+.vscode/
+.idea/
+*.swp
+*.swo
+.DS_Store
+Thumbs.db
+
+# ── Docker ────────────────────────────────────────────────────────────────────
+.docker/
+
+# ── Observability runtime data ────────────────────────────────────────────────
+observability/grafana/data/
+observability/prometheus/data/
+observability/loki/data/
+observability/alertmanager/data/
+
+# ── Local CLI state ───────────────────────────────────────────────────────────
+.1proxy2xvpn-state

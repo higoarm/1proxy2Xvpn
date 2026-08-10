@@ -1,0 +1,11 @@
+# Loki datasource — mounted ONLY by the full observability stack.
+# Kept outside the main provisioning/ dir so the lite stack (Prometheus only)
+# never sees it. This avoids the "only one datasource can be default" error.
+apiVersion: 1
+
+datasources:
+  - name: Loki
+    type: loki
+    access: proxy
+    url: http://loki:3100
+    editable: false
