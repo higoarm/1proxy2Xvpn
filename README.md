@@ -60,6 +60,20 @@ different exit IP through the VPN pool:
      GitHub web editor. -->
 
 
+**HAProxy stats** — all VPN backends UP, load-balanced behind one endpoint:
+
+<!-- SCREENSHOT-HAPROXY: Drag your HAProxy stats screenshot (.png) onto the line
+     below in the GitHub web editor. Or commit it to docs/media/ and reference it
+     as: ![HAProxy stats](docs/media/haproxy.png) -->
+
+
+**Grafana dashboard** — live pool health, active containers, and throughput:
+
+<!-- SCREENSHOT-GRAFANA: Drag your Grafana dashboard screenshot (.png) onto the
+     line below in the GitHub web editor. Or commit it to docs/media/ and
+     reference it as: ![Grafana dashboard](docs/media/grafana.png) -->
+
+
 ![](https://raw.githubusercontent.com/andreasbm/readme/master/assets/lines/aqua.png)
 
 ## Table of Contents

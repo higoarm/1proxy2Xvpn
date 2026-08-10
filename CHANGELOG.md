@@ -16,6 +16,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [2.4.9] — 2026-08-10
+
+### Added
+- Two more Demo slots for screenshots: **HAProxy stats** and **Grafana
+  dashboard**, each with a caption. Added a `docs/media/` folder for committing
+  screenshots via git (or drop them in the GitHub web editor).
+
+---
+
 ## [2.4.8] — 2026-08-10
 
 ### Changed
