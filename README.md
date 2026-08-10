@@ -68,6 +68,7 @@ https://github.com/user-attachments/assets/e0b1af83-9a9c-4bd9-91f6-2215ccd892fd
 
 **HAProxy stats** — all VPN backends UP, load-balanced behind one endpoint:
 
+![HAProxy stats](docs/media/haproxy.png)
 <!-- SCREENSHOT-HAPROXY: Drag your HAProxy stats screenshot (.png) onto the line
      below in the GitHub web editor. Or commit it to docs/media/ and reference it
      as: ![HAProxy stats](docs/media/haproxy.png) -->
@@ -75,6 +76,7 @@ https://github.com/user-attachments/assets/e0b1af83-9a9c-4bd9-91f6-2215ccd892fd
 
 **Grafana dashboard** — live pool health, active containers, and throughput:
 
+![Grafana dashboard](docs/media/grafana.png)
 <!-- SCREENSHOT-GRAFANA: Drag your Grafana dashboard screenshot (.png) onto the
      line below in the GitHub web editor. Or commit it to docs/media/ and
      reference it as: ![Grafana dashboard](docs/media/grafana.png) -->
