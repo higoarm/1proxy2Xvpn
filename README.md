@@ -21,17 +21,33 @@
 
 ## About
 
-**1proxy2Xvpn** turns a directory of `.ovpn` files into a fleet of isolated proxy
-endpoints — one Docker container per VPN tunnel — fronted by a single HAProxy
-load balancer. Point any tool at `http://localhost:9999` and each connection
-exits through a different VPN IP, cycled in round-robin so every IP in the pool
-is used before any repeats.
+**1proxy2Xvpn** turns your commercial VPN subscription into a fleet of rotating
+proxy endpoints. It takes the `.ovpn` configuration files from providers like
+**ExpressVPN, NordVPN, Surfshark, Private Internet Access (PIA), Mullvad** — or
+any provider that offers standard OpenVPN configs — and runs each one in its own
+isolated Docker container. A single HAProxy endpoint then load-balances across
+all of them, so every request you send exits through a different VPN IP.
+
+If your VPN provider gives you `.ovpn` files, this tool turns them into a
+distributed proxy pool. Point any tool at `http://localhost:9999` and your
+traffic round-robins across every VPN location you've configured — one IP after
+another, cycling through the whole pool before any address repeats.
 
 It was built for **authorized security testing at scale** — Bug Bounty programs,
 Vulnerability Disclosure Programs, and sanctioned penetration tests — where you
 need IP diversity to avoid per-IP rate limits without ever leaking your real
 address. Every container boots behind a deny-by-default `iptables` Kill Switch,
 so if a tunnel drops, traffic stops instead of falling back to your real IP.
+
+**Works with any OpenVPN-based provider**, including:
+
+- ExpressVPN
+- NordVPN
+- Surfshark
+- Private Internet Access (PIA)
+- Mullvad
+
+If it ships standard `.ovpn` files, it works.
 
 Highlights:
 
@@ -48,9 +64,6 @@ Highlights:
 
 **Installation** — clone, setup, and build from a fresh machine:
 
-https://github.com/user-attachments/assets/4497787c-8122-4333-913b-31b88eb77ddc
-
-
 <!-- UPLOAD-VIDEO-1: On GitHub, edit this file in the web editor and drag your
      installation .mp4 onto the line below. GitHub replaces this comment area
      with an embedded video player. -->
@@ -59,16 +72,12 @@ https://github.com/user-attachments/assets/4497787c-8122-4333-913b-31b88eb77ddc
 **IP rotation in action** — health check, then 10 requests each returning a
 different exit IP through the VPN pool:
 
-https://github.com/user-attachments/assets/e0b1af83-9a9c-4bd9-91f6-2215ccd892fd
-
-
 <!-- UPLOAD-VIDEO-2: Drag your IP-rotation .mp4 onto the line below in the
      GitHub web editor. -->
 
 
 **HAProxy stats** — all VPN backends UP, load-balanced behind one endpoint:
 
-![HAProxy stats](docs/media/haproxy.png)
 <!-- SCREENSHOT-HAPROXY: Drag your HAProxy stats screenshot (.png) onto the line
      below in the GitHub web editor. Or commit it to docs/media/ and reference it
      as: ![HAProxy stats](docs/media/haproxy.png) -->
@@ -76,7 +85,6 @@ https://github.com/user-attachments/assets/e0b1af83-9a9c-4bd9-91f6-2215ccd892fd
 
 **Grafana dashboard** — live pool health, active containers, and throughput:
 
-![Grafana dashboard](docs/media/grafana.png)
 <!-- SCREENSHOT-GRAFANA: Drag your Grafana dashboard screenshot (.png) onto the
      line below in the GitHub web editor. Or commit it to docs/media/ and
      reference it as: ![Grafana dashboard](docs/media/grafana.png) -->

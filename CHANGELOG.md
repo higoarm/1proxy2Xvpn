@@ -16,6 +16,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [2.5.0] — 2026-08-11
+
+### Changed
+- **About section rewritten** to make the provider use case explicit: the tool
+  turns `.ovpn` files from commercial VPN providers (ExpressVPN, NordVPN,
+  Surfshark, PIA, Mullvad, or any OpenVPN-based provider) into a rotating proxy
+  pool. Added a bulleted provider list.
+
+---
+
 ## [2.4.9] — 2026-08-10
 
 ### Added
