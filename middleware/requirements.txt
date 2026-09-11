@@ -1,0 +1,4 @@
+# smart_router.py uses only the Python standard library (asyncio) for the proxy
+# itself. prometheus_client is optional — it enables the /metrics endpoint.
+# Without it, the proxy still works; /metrics just reports it's unavailable.
+prometheus_client>=0.20.0

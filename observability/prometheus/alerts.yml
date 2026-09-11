@@ -1,0 +1,98 @@
+# =============================================================================
+# alerts.yml — Production-grade alerts for 1proxy2xvpn
+# =============================================================================
+groups:
+  - name: vpn_health
+    interval: 30s
+    rules:
+      # ── Critical: HAProxy is down ─────────────────────────────────────────────
+      - alert: HAProxyDown
+        expr: up{job="haproxy"} == 0
+        for: 1m
+        labels:
+          severity: critical
+          component: haproxy
+        annotations:
+          summary: "HAProxy load balancer is DOWN"
+          description: "HAProxy has been unreachable for 1+ minute. All proxy rotation is broken."
+
+      # ── Critical: more than 50% of backends down ─────────────────────────────
+      - alert: HighBackendFailureRate
+        expr: |
+          sum(haproxy_backend_servers{state="UP",proxy="http_vpn_pool"})
+          / sum(haproxy_backend_servers{proxy="http_vpn_pool"}) < 0.5
+        for: 5m
+        labels:
+          severity: critical
+          component: vpn-pool
+        annotations:
+          summary: "More than 50% of VPN containers are DOWN"
+          description: "Only {{ $value | humanizePercentage }} of VPN backends are healthy."
+
+      # ── Warning: 20% backends down ────────────────────────────────────────────
+      - alert: ModerateBackendFailureRate
+        expr: |
+          sum(haproxy_backend_servers{state="UP",proxy="http_vpn_pool"})
+          / sum(haproxy_backend_servers{proxy="http_vpn_pool"}) < 0.8
+        for: 10m
+        labels:
+          severity: warning
+          component: vpn-pool
+        annotations:
+          summary: "20%+ of VPN containers are degraded"
+          description: "{{ $value | humanizePercentage }} backends healthy. Investigate failed containers."
+
+      # ── Warning: high latency ─────────────────────────────────────────────────
+      # Backends run in `mode tcp` (required for CONNECT/SOCKS5), so the HTTP
+      # request-duration histogram does not exist. We use the backend average
+      # response time (Rtime), which the HAProxy Prometheus exporter publishes
+      # in any mode, and alert when the pool's worst backend is slow.
+      - alert: HighProxyLatency
+        expr: |
+          max(haproxy_backend_response_time_average_seconds{proxy=~".*vpn_pool.*"}) > 5
+        for: 5m
+        labels:
+          severity: warning
+          component: performance
+        annotations:
+          summary: "Backend average response time above 5s"
+          description: "A proxy backend is responding slowly — possible VPN congestion or upstream issue."
+
+      # ── Critical: container leak (host RAM) ──────────────────────────────────
+      - alert: HostMemoryHigh
+        expr: |
+          (node_memory_MemAvailable_bytes / node_memory_MemTotal_bytes) < 0.10
+        for: 5m
+        labels:
+          severity: critical
+          component: host
+        annotations:
+          summary: "Host has less than 10% available memory"
+          description: "Container pool may be too large for this host. Available: {{ $value | humanizePercentage }}"
+
+      # ── Critical: file descriptor exhaustion ─────────────────────────────────
+      - alert: FileDescriptorsExhausted
+        expr: |
+          (node_filefd_allocated / node_filefd_maximum) > 0.85
+        for: 5m
+        labels:
+          severity: critical
+          component: host
+        annotations:
+          summary: "File descriptor usage above 85%"
+          description: "Increase fs.file-max or reduce container count."
+
+      # ── Warning: container restart loop ──────────────────────────────────────
+      # container_last_seen is a growing timestamp; rate() of it is ~1 for any
+      # live container, so it can't detect restarts. changes() on the container
+      # start time counts actual process restarts within the window.
+      - alert: ContainerRestartLoop
+        expr: |
+          changes(container_start_time_seconds{name=~"1proxy2xvpn.*|.*ovpn.*"}[10m]) > 2
+        for: 0m
+        labels:
+          severity: warning
+          component: container
+        annotations:
+          summary: "Container {{ $labels.name }} is restarting frequently"
+          description: "Restart rate exceeds threshold — VPN credentials or server may be invalid."

@@ -1,0 +1,246 @@
+{
+  "annotations": {
+    "list": [{
+      "datasource": "Prometheus",
+      "enable": true,
+      "iconColor": "rgba(255, 96, 96, 1)",
+      "name": "Annotations",
+      "type": "dashboard"
+    }]
+  },
+  "editable": true,
+  "fiscalYearStartMonth": 0,
+  "graphTooltip": 0,
+  "id": null,
+  "links": [],
+  "liveNow": true,
+  "panels": [
+    {
+      "datasource": "Prometheus",
+      "fieldConfig": {
+        "defaults": {
+          "color": {"mode": "thresholds"},
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {"color": "red", "value": null},
+              {"color": "yellow", "value": 0.7},
+              {"color": "green", "value": 0.9}
+            ]
+          },
+          "unit": "percentunit",
+          "min": 0,
+          "max": 1
+        }
+      },
+      "gridPos": {"h": 8, "w": 6, "x": 0, "y": 0},
+      "id": 1,
+      "options": {
+        "colorMode": "background",
+        "graphMode": "area",
+        "reduceOptions": {"calcs": ["lastNotNull"]}
+      },
+      "pluginVersion": "10.0.0",
+      "targets": [{
+        "expr": "sum(haproxy_server_status{proxy=\"http_vpn_pool\", state=\"UP\"}) / count(count by (server)(haproxy_server_status{proxy=\"http_vpn_pool\"}))",
+        "refId": "A"
+      }],
+      "title": "VPN Pool Health (% UP)",
+      "type": "stat"
+    },
+    {
+      "datasource": "Prometheus",
+      "fieldConfig": {
+        "defaults": {
+          "color": {"mode": "thresholds"},
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {"color": "red", "value": null},
+              {"color": "yellow", "value": 5},
+              {"color": "green", "value": 20}
+            ]
+          },
+          "unit": "short"
+        }
+      },
+      "gridPos": {"h": 8, "w": 6, "x": 6, "y": 0},
+      "id": 2,
+      "options": {
+        "colorMode": "background",
+        "graphMode": "none",
+        "reduceOptions": {"calcs": ["lastNotNull"]}
+      },
+      "targets": [{
+        "expr": "sum(haproxy_server_status{proxy=\"http_vpn_pool\", state=\"UP\"})",
+        "refId": "A"
+      }],
+      "title": "Active VPN Containers (UP)",
+      "type": "stat"
+    },
+    {
+      "datasource": "Prometheus",
+      "fieldConfig": {
+        "defaults": {"unit": "cps"}
+      },
+      "gridPos": {"h": 8, "w": 6, "x": 12, "y": 0},
+      "id": 3,
+      "options": {
+        "colorMode": "value",
+        "graphMode": "area",
+        "reduceOptions": {"calcs": ["lastNotNull"]}
+      },
+      "targets": [{
+        "expr": "sum(rate(haproxy_frontend_connections_total{proxy=\"http_proxy_entrypoint\"}[1m]))",
+        "refId": "A"
+      }],
+      "title": "Connections/sec (Frontend)",
+      "type": "stat"
+    },
+    {
+      "datasource": "Prometheus",
+      "fieldConfig": {
+        "defaults": {"unit": "short"}
+      },
+      "gridPos": {"h": 8, "w": 6, "x": 18, "y": 0},
+      "id": 4,
+      "options": {
+        "colorMode": "value",
+        "graphMode": "area",
+        "reduceOptions": {"calcs": ["lastNotNull"]}
+      },
+      "targets": [{
+        "expr": "sum(haproxy_backend_current_sessions{proxy=\"http_vpn_pool\"})",
+        "refId": "A"
+      }],
+      "title": "Active Sessions",
+      "type": "stat"
+    },
+    {
+      "datasource": "Prometheus",
+      "gridPos": {"h": 10, "w": 12, "x": 0, "y": 8},
+      "id": 5,
+      "fieldConfig": {
+        "defaults": {"unit": "percentunit"}
+      },
+      "targets": [{
+        "expr": "sum by (name) (rate(container_cpu_usage_seconds_total{container_label_1proxy2xvpn_managed=\"true\"}[1m]))",
+        "legendFormat": "{{name}}",
+        "refId": "A"
+      }],
+      "title": "CPU usage per container",
+      "type": "timeseries"
+    },
+    {
+      "datasource": "Prometheus",
+      "gridPos": {"h": 10, "w": 12, "x": 12, "y": 8},
+      "id": 6,
+      "fieldConfig": {
+        "defaults": {"unit": "bytes"}
+      },
+      "targets": [{
+        "expr": "sum by (name) (container_memory_working_set_bytes{container_label_1proxy2xvpn_managed=\"true\"})",
+        "legendFormat": "{{name}}",
+        "refId": "A"
+      }],
+      "title": "Memory per container",
+      "type": "timeseries"
+    },
+    {
+      "datasource": "Prometheus",
+      "gridPos": {"h": 10, "w": 12, "x": 0, "y": 18},
+      "id": 7,
+      "fieldConfig": {
+        "defaults": {"unit": "Bps"}
+      },
+      "targets": [
+        {
+          "expr": "sum(rate(container_network_transmit_bytes_total{container_label_1proxy2xvpn_managed=\"true\"}[1m]))",
+          "legendFormat": "TX (egress via VPN)",
+          "refId": "A"
+        },
+        {
+          "expr": "sum(rate(container_network_receive_bytes_total{container_label_1proxy2xvpn_managed=\"true\"}[1m]))",
+          "legendFormat": "RX (ingress from clients)",
+          "refId": "B"
+        }
+      ],
+      "title": "Aggregate network throughput",
+      "type": "timeseries"
+    },
+    {
+      "datasource": "Prometheus",
+      "gridPos": {"h": 10, "w": 12, "x": 12, "y": 18},
+      "id": 8,
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "min": 0
+        }
+      },
+      "targets": [
+        {
+          "expr": "sum(haproxy_server_status{proxy=\"http_vpn_pool\", state=\"UP\"})",
+          "legendFormat": "UP",
+          "refId": "A"
+        },
+        {
+          "expr": "sum(haproxy_server_status{proxy=\"http_vpn_pool\", state=\"DOWN\"})",
+          "legendFormat": "DOWN",
+          "refId": "B"
+        },
+        {
+          "expr": "sum(haproxy_server_status{proxy=\"http_vpn_pool\", state=\"MAINT\"})",
+          "legendFormat": "MAINT",
+          "refId": "C"
+        }
+      ],
+      "title": "VPN backend states over time",
+      "type": "timeseries"
+    },
+    {
+      "datasource": "Prometheus",
+      "gridPos": {"h": 10, "w": 24, "x": 0, "y": 28},
+      "id": 9,
+      "fieldConfig": {
+        "defaults": {"unit": "Bps"}
+      },
+      "targets": [
+        {
+          "expr": "sum(rate(haproxy_frontend_bytes_in_total[1m]))",
+          "legendFormat": "Frontend IN",
+          "refId": "A"
+        },
+        {
+          "expr": "sum(rate(haproxy_frontend_bytes_out_total[1m]))",
+          "legendFormat": "Frontend OUT",
+          "refId": "B"
+        },
+        {
+          "expr": "sum(rate(haproxy_backend_bytes_in_total{proxy=\"http_vpn_pool\"}[1m]))",
+          "legendFormat": "Backend IN",
+          "refId": "C"
+        },
+        {
+          "expr": "sum(rate(haproxy_backend_bytes_out_total{proxy=\"http_vpn_pool\"}[1m]))",
+          "legendFormat": "Backend OUT",
+          "refId": "D"
+        }
+      ],
+      "title": "HAProxy traffic (bytes/sec)",
+      "type": "timeseries"
+    }
+  ],
+  "refresh": "10s",
+  "schemaVersion": 38,
+  "style": "dark",
+  "tags": ["1proxy2xvpn", "vpn", "proxy"],
+  "templating": {"list": []},
+  "time": {"from": "now-30m", "to": "now"},
+  "timepicker": {},
+  "timezone": "",
+  "title": "1proxy2Xvpn — Overview",
+  "uid": "1proxy2xvpn-overview",
+  "version": 3
+}

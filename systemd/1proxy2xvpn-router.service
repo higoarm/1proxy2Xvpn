@@ -1,0 +1,35 @@
+[Unit]
+Description=1proxy2xvpn — Smart routing middleware
+After=network-online.target haproxy.service
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=nobody
+Group=nogroup
+WorkingDirectory=/opt/1proxy2xvpn/middleware
+ExecStart=/usr/bin/python3 /opt/1proxy2xvpn/middleware/smart_router.py \
+    --upstream http://127.0.0.1:9999 \
+    --listen 0.0.0.0:9888
+
+Restart=on-failure
+RestartSec=5s
+
+# Security
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=full
+ProtectHome=true
+ProtectKernelTunables=true
+ProtectKernelModules=true
+ProtectControlGroups=true
+LockPersonality=true
+RestrictRealtime=true
+
+# Resource limits
+LimitNOFILE=65535
+MemoryMax=1G
+CPUQuota=200%
+
+[Install]
+WantedBy=multi-user.target
