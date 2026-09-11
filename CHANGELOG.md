@@ -16,27 +16,39 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
-## [2.15.0] — 2026-09-11
 
-### Fixed (Release 8 — onboarding quick wins)
-- **`ENABLE_SOCKS5` default was inconsistent across three files.** `03_up.sh`
-  defaulted it to `true` while `entrypoint.sh` and `.env.example` used `false`,
-  so without a `.env` SOCKS5 came up **enabled** — contradicting the documented
-  "opt-in" design and wasting ~3 MB + a process per container. There is now a
-  single source of truth in `lib_common.sh` (`false`); `03_up.sh` inherits it
-  and the container entrypoint mirrors it. SOCKS5 is now genuinely opt-in, so
-  the README's `ENABLE_SOCKS5=true` in the nmap/Hydra examples is correct and
-  necessary (previously redundant). A clarifying note was added.
-- **Removed the misleading `X-Region` example from the CLI help.** It showed
-  `curl -H "X-Region: eu"` as if header-based regional routing worked, but the
-  HAProxy frontends run in `mode tcp` (which can't read HTTP headers) and no
-  `use_backend` rule selects a regional pool. Replaced with a working
-  IP-rotation example. (Regional pools still exist as backends for manual ACL
-  routing, as documented in ARCHITECTURE.)
+## [2.16.0] — 2026-09-11
+
+### Added (Release 9 — onboarding)
+- **`up --wait [timeout]`**: after starting containers, polls each one's Docker
+  health status until the tunnels are up (default 120s) with a progress bar,
+  then points you to HAProxy generation — replacing the "wait ~60s manually"
+  step. Without `--wait`, behavior is unchanged.
+- **`quickstart` command**: one command that chains setup → build → up (--wait)
+  → haproxy and then runs a rotation test. It's idempotent and **stops at the
+  first error** (via `set -Eeo pipefail`), so nothing is hidden; a preflight
+  check aborts early with a clear message if `ovpns/` has no `.ovpn` files. The
+  Docker steps run as the invoking user, so it also sidesteps the `newgrp
+  docker` step. The individual commands remain the source of truth — quickstart
+  is a convenience wrapper, not a replacement.
+- README Quick Start restructured into a "fast path" (`quickstart`) and a
+  "manual path" (individual steps, now using `up --wait`).
+
+### Changed (Release 8 — onboarding quick wins, SOCKS5 per maintainer preference)
+- **Single source of truth for `ENABLE_SOCKS5`** in `lib_common.sh`, mirrored by
+  the container entrypoint and `.env.example`. Previously the default diverged
+  across three files (`03_up.sh` had `true`, the others `false`). All four now
+  agree. Per maintainer preference the default is **`true`** (SOCKS5 enabled);
+  the redundant `ENABLE_SOCKS5=true` was removed from the README nmap/Hydra
+  examples.
+- **Removed the misleading `X-Region` example from the CLI help.** It implied
+  header-based regional routing worked, but the HAProxy frontends run in
+  `mode tcp` (which can't read HTTP headers) and no `use_backend` rule selects a
+  regional pool. Replaced with a working IP-rotation example.
 - **Fixed CLI help flag grouping:** `--only-up` and `--public-stats` now appear
   under `haproxy` (where they belong), not visually under `proxychains`.
-- **Removed dead `release-patch/minor/major` targets from the Makefile** that
-  referenced a `scripts/release.sh` which doesn't exist.
+- **Removed dead `release-patch/minor/major` Makefile targets** that referenced
+  a `scripts/release.sh` which doesn't exist.
 
 ---
 

@@ -194,6 +194,22 @@ Full technical deep-dive in [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md).
 
 ## Quick Start
 
+### Fast path — one command
+
+```bash
+git clone https://github.com/higoarm/1proxy2Xvpn.git && cd 1proxy2Xvpn
+chmod +x 1proxy2xvpn scripts/*.sh docker/*.sh
+cp /path/to/your/*.ovpn ovpns/          # add your configs + credentials (e.g. ovpns/authvpn.txt)
+sudo ./1proxy2xvpn quickstart
+```
+
+`quickstart` runs setup → build → up (waiting for tunnels) → HAProxy, then runs a
+rotation test — stopping at the first error so nothing is hidden.
+
+### Manual path — step by step
+
+Prefer full control? Run the steps individually:
+
 ```bash
 # 1. Clone and enter the directory
 git clone https://github.com/higoarm/1proxy2Xvpn.git && cd 1proxy2Xvpn
@@ -208,16 +224,16 @@ sudo ./1proxy2xvpn setup
 #    otherwise the next commands fail with a docker.sock permission error)
 newgrp docker
 
-# 5. Add your .ovpn files
+# 5. Add your .ovpn files (and credentials, e.g. ovpns/authvpn.txt)
 cp /path/to/your/*.ovpn ovpns/
 
 # 6. Build the image
 ./1proxy2xvpn build
 
-# 7. Start all containers
-./1proxy2xvpn up
+# 7. Start containers and wait until the tunnels are up (no manual sleep)
+./1proxy2xvpn up --wait
 
-# 8. Wait ~60s for VPNs to connect, then configure HAProxy
+# 8. Configure HAProxy
 sudo ./1proxy2xvpn haproxy --only-up
 
 # 9. Test — 10 requests should show rotating exit IPs
@@ -227,7 +243,8 @@ for i in {1..10}; do curl -s -x http://localhost:9999 https://api.ipify.org; ech
 > On a machine where Docker was just installed, your user isn't in the `docker`
 > group yet for the current shell. `newgrp docker` applies it immediately;
 > alternatively, log out and back in. Without this, `build` and `up` fail with
-> `permission denied ... docker.sock`.
+> `permission denied ... docker.sock`. (`quickstart` handles this by running the
+> Docker steps as your user.)
 
 ![](https://raw.githubusercontent.com/andreasbm/readme/master/assets/lines/aqua.png)
 
@@ -347,8 +364,8 @@ natively. The tool generates a ready-to-use `proxychains.conf` for you (with all
 your SOCKS5 proxies and per-connection rotation) — just like it does for HAProxy:
 
 ```bash
-# SOCKS5 is off by default (opt-in) — enable it, then generate the config
-ENABLE_SOCKS5=true ./1proxy2xvpn up
+# SOCKS5 is enabled by default — just bring containers up and generate the config
+./1proxy2xvpn up
 ./1proxy2xvpn proxychains          # writes ./proxychains.conf
 
 # Run TCP connect scans through it (rotates IP per connection)
@@ -366,9 +383,9 @@ proxychains4 nmap -sT -Pn -p 80,443 target.com
 
 ### Hydra (via SOCKS5 / proxychains)
 Hydra has no native proxy flag, so route it through the generated
-`proxychains.conf` (enable SOCKS5 first, then generate the config):
+`proxychains.conf` (SOCKS5 is enabled by default):
 ```bash
-ENABLE_SOCKS5=true ./1proxy2xvpn up
+./1proxy2xvpn up
 ./1proxy2xvpn proxychains
 proxychains4 -f proxychains.conf hydra -L users.txt -P passwords.txt \
   target.com http-post-form "/login:user=^USER^&pass=^PASS^:Invalid"

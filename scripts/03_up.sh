@@ -16,7 +16,20 @@ print_banner
 # ── Args ──────────────────────────────────────────────────────────────────────
 BATCH_SIZE="${BATCH_SIZE:-10}"
 BATCH_DELAY="${BATCH_DELAY:-5}"
-# ENABLE_SOCKS5 default comes from lib_common.sh (single source of truth: false).
+# ENABLE_SOCKS5 default comes from lib_common.sh (single source of truth).
+
+# --wait [timeout]: after starting, poll container health until tunnels are up
+# (instead of asking the user to sleep ~60s), then point to HAProxy generation.
+WAIT=false
+WAIT_TIMEOUT=120
+_prev=""
+for arg in "$@"; do
+    case "${arg}" in
+        --wait) WAIT=true ;;
+        *) if [ "${_prev}" = "--wait" ] && [[ "${arg}" =~ ^[0-9]+$ ]]; then WAIT_TIMEOUT="${arg}"; fi ;;
+    esac
+    _prev="${arg}"
+done
 
 # ── Validation ────────────────────────────────────────────────────────────────
 [ ! -d "${OVPN_DIR}" ] && die "OVPN dir not found: ${OVPN_DIR}"
@@ -215,8 +228,38 @@ done
 section "Results"
 echo "  Started: ${STARTED}/${TOTAL}"
 [ "${FAILED}" -gt 0 ] && echo "  Failed : ${FAILED}"
-
 echo
-log "Containers are connecting to VPNs in the background (~30-60s typical)."
-log "Check status: ./1proxy2xvpn status"
-log "Generate HAProxy: sudo ./1proxy2xvpn haproxy --only-up"
+
+if [ "${WAIT}" = "true" ] && [ "${STARTED}" -gt 0 ]; then
+    section "Waiting for tunnels (up to ${WAIT_TIMEOUT}s)"
+    # Poll each managed container's Docker health status until they're healthy
+    # (tun0 up + proxy serving) or the timeout elapses. Replaces the manual sleep.
+    mapfile -t MANAGED < <(docker ps -q --filter "label=1proxy2xvpn.managed=true")
+    EXPECTED=${#MANAGED[@]}
+    elapsed=0
+    interval=3
+    HEALTHY=0
+    while [ "${elapsed}" -lt "${WAIT_TIMEOUT}" ]; do
+        HEALTHY=0
+        for cid in "${MANAGED[@]}"; do
+            status=$(docker inspect -f '{{if .State.Health}}{{.State.Health.Status}}{{else}}none{{end}}' "${cid}" 2>/dev/null || echo "gone")
+            [ "${status}" = "healthy" ] && HEALTHY=$((HEALTHY + 1))
+        done
+        progress_bar "${HEALTHY}" "${EXPECTED}" "tunnels healthy"
+        [ "${HEALTHY}" -ge "${EXPECTED}" ] && break
+        sleep "${interval}"
+        elapsed=$((elapsed + interval))
+    done
+    echo
+    if [ "${HEALTHY}" -ge "${EXPECTED}" ]; then
+        ok "All ${HEALTHY} tunnels are up."
+    else
+        warn "${HEALTHY}/${EXPECTED} tunnels healthy after ${WAIT_TIMEOUT}s (the rest may still be connecting)."
+    fi
+    echo
+    log "Next: generate HAProxy →  sudo ./1proxy2xvpn haproxy --only-up"
+else
+    log "Containers are connecting to VPNs in the background (~30-60s typical)."
+    log "Check status: ./1proxy2xvpn status"
+    log "Generate HAProxy: sudo ./1proxy2xvpn haproxy --only-up"
+fi

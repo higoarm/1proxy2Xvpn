@@ -25,9 +25,10 @@ USAGE:
     1proxy2xvpn <command> [options]
 
 COMMANDS:
+    quickstart                  One command: setup → build → up → haproxy (+ test)
     setup                       Install dependencies, tune kernel, prepare host
     build [--no-cache]          Build the Docker image
-    up                          Start all containers (one per .ovpn file)
+    up [--wait [timeout]]       Start containers (--wait polls until tunnels are healthy)
     down                        Stop and remove all containers
     destroy [--purge]           Tear down (--purge also removes image)
 
@@ -81,13 +82,14 @@ DOCS:
 USAGE
 }
 
-VERSION="2.15.0"
+VERSION="2.16.0"
 
 CMD="${1:-help}"
 shift 2>/dev/null || true
 
 case "${CMD}" in
     setup)        exec bash "${SCRIPTS_DIR}/01_setup.sh"     "$@" ;;
+    quickstart)   exec bash "${SCRIPTS_DIR}/13_quickstart.sh" "$@" ;;
     build)        exec bash "${SCRIPTS_DIR}/02_build.sh"     "$@" ;;
     up|start)     exec bash "${SCRIPTS_DIR}/03_up.sh"        "$@" ;;
     down|stop)    exec bash "${SCRIPTS_DIR}/07_destroy.sh"   "$@" ;;

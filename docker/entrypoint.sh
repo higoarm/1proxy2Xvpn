@@ -41,10 +41,10 @@ TUN_WAIT_TIMEOUT="${TUN_WAIT_TIMEOUT:-90}"
 # Monitor loop interval: 30s is plenty for detecting a dead process. At 285
 # containers, a 5s interval means 285 bash loops waking 12×/min for no reason.
 MONITOR_INTERVAL="${MONITOR_INTERVAL:-30}"
-# SOCKS5 is opt-in: most workloads use the HTTP proxy. Running dante in every
-# container wastes ~3MB RAM + a process slot per container (×285 = real cost).
-# Set ENABLE_SOCKS5=true to turn it on.
-ENABLE_SOCKS5="${ENABLE_SOCKS5:-false}"
+# SOCKS5 is enabled by default (mirrors the host-side default in lib_common.sh).
+# Set ENABLE_SOCKS5=false to disable it and save ~3MB RAM + a process per
+# container (×285 = real cost) when you only need the HTTP proxy.
+ENABLE_SOCKS5="${ENABLE_SOCKS5:-true}"
 
 # ── Colored logging ───────────────────────────────────────────────────────────
 G='\033[0;32m'; Y='\033[1;33m'; R='\033[0;31m'; N='\033[0m'

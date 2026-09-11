@@ -39,9 +39,10 @@ HAPROXY_SOCKS_PORT="${HAPROXY_SOCKS_PORT:-9998}"
 HAPROXY_STATS_PORT="${HAPROXY_STATS_PORT:-9997}"
 OVPN_DIR="${OVPN_DIR:-${PROJECT_ROOT}/ovpns}"
 SECRETS_DIR="${SECRETS_DIR:-${PROJECT_ROOT}/secrets}"
-# SOCKS5 is opt-in (saves ~3 MB + one process per container). Single source of
-# truth for all host-side scripts; the container entrypoint mirrors this default.
-ENABLE_SOCKS5="${ENABLE_SOCKS5:-false}"
+# SOCKS5 is enabled by default. Single source of truth for all host-side
+# scripts; the container entrypoint mirrors this default. Set ENABLE_SOCKS5=false
+# to disable it (saves ~3 MB + one process per container).
+ENABLE_SOCKS5="${ENABLE_SOCKS5:-true}"
 
 # ── Colors and logging ────────────────────────────────────────────────────────
 if [ -t 1 ]; then
