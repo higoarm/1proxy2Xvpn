@@ -1,0 +1,14 @@
+extends: default
+
+rules:
+  line-length:
+    max: 200
+    level: warning
+  document-start:
+    present: false
+  truthy:
+    check-keys: false
+
+ignore: |
+  observability/grafana/dashboards/*.json
+  .github/workflows/
