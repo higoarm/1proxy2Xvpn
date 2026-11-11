@@ -1,0 +1,34 @@
+# =============================================================================
+# prometheus.yml (LITE) — Scrapes HAProxy + cAdvisor only
+#
+# Removed vs. full config:
+#   - alerting → Alertmanager (no notification target was configured)
+#   - node job → node-exporter (host metrics weren't monitored)
+#   - rule_files → alerts.yml (alerts had nowhere to go)
+#
+# scrape_interval raised 15s → 30s: halves Prometheus write load and disk usage
+# with no practical loss for a dashboard you refresh every 10s.
+# =============================================================================
+global:
+  scrape_interval: 30s
+  evaluation_interval: 30s
+  external_labels:
+    cluster: 1proxy2xvpn
+
+scrape_configs:
+  # ── HAProxy (pool health, sessions, throughput) — the metrics that matter ───
+  - job_name: 'haproxy'
+    static_configs:
+      - targets: ['host.docker.internal:8404']
+        labels:
+          service: haproxy
+
+  # ── cAdvisor (per-container CPU/mem/net) ────────────────────────────────────
+  - job_name: 'cadvisor'
+    static_configs:
+      - targets: ['cadvisor:8080']
+
+  # ── Prometheus self ─────────────────────────────────────────────────────────
+  - job_name: 'prometheus'
+    static_configs:
+      - targets: ['localhost:9090']

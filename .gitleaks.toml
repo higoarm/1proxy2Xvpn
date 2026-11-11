@@ -1,0 +1,39 @@
+# =============================================================================
+# .gitleaks.toml — secret-scanning configuration for 1proxy2Xvpn
+#
+# We extend Gitleaks' default ruleset (so real secrets are still caught) and
+# add a narrow allowlist for known-safe DOCUMENTATION examples:
+#   - placeholder credentials in docs (e.g. "your_openvpn_password")
+#   - commands that read a password dynamically from a local file at runtime
+#     (e.g. curl --user "admin:${STATS_PASS}") — no secret is committed
+#
+# The tool NEVER stores a real credential in the repository: the HAProxy stats
+# password is generated at runtime and written to ~/.config/1proxy2xvpn/, which
+# is covered by .gitignore. OpenVPN auth files live in secrets/, also ignored.
+# =============================================================================
+
+title = "1proxy2Xvpn Gitleaks config"
+
+[extend]
+# Keep all of Gitleaks' built-in rules — we only ADD exceptions below.
+useDefault = true
+
+[allowlist]
+description = "Documentation placeholders and runtime-read credentials (no real secrets)"
+
+# Regexes matched against the detected finding. These are example/placeholder
+# strings and dynamic reads, never real secrets.
+regexes = [
+  # Password injected from a shell variable read out of the local creds file
+  '''admin:\$\{STATS_PASS\}''',
+  '''admin:\$\(grep''',
+  # Documentation placeholders — literally the words a user replaces
+  '''your_openvpn_username''',
+  '''your_openvpn_password''',
+  '''your_service_password''',
+  '''your_service_username''',
+]
+
+# NOTE: we deliberately do NOT allowlist whole file paths. Scoping to specific
+# regexes means a real token accidentally pasted into a doc is still caught —
+# only these exact placeholder/runtime-read patterns are ignored.

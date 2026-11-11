@@ -1,0 +1,39 @@
+# =============================================================================
+# prometheus.yml — Scrapes metrics from HAProxy, cAdvisor, node-exporter
+# =============================================================================
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+  external_labels:
+    cluster: 1proxy2xvpn
+
+alerting:
+  alertmanagers:
+    - static_configs:
+        - targets: ['alertmanager:9093']
+
+rule_files:
+  - /etc/prometheus/alerts.yml
+
+scrape_configs:
+  # ── HAProxy (running on host) ───────────────────────────────────────────────
+  - job_name: 'haproxy'
+    static_configs:
+      - targets: ['host.docker.internal:8404']
+        labels:
+          service: haproxy
+
+  # ── cAdvisor (per-container metrics) ────────────────────────────────────────
+  - job_name: 'cadvisor'
+    static_configs:
+      - targets: ['cadvisor:8080']
+
+  # ── Node Exporter (host metrics: CPU/RAM/disk/network) ──────────────────────
+  - job_name: 'node'
+    static_configs:
+      - targets: ['node-exporter:9100']
+
+  # ── Prometheus self ─────────────────────────────────────────────────────────
+  - job_name: 'prometheus'
+    static_configs:
+      - targets: ['localhost:9090']

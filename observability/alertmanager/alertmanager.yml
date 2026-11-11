@@ -1,0 +1,41 @@
+route:
+  receiver: 'default'
+  group_by: ['alertname', 'severity']
+  group_wait: 30s
+  group_interval: 5m
+  repeat_interval: 4h
+
+  routes:
+    - matchers:
+        - severity = critical
+      receiver: 'critical'
+      repeat_interval: 1h
+
+receivers:
+  - name: 'default'
+    # Configure your preferred channel below.
+    # Examples for common destinations are commented out.
+
+    # webhook_configs:
+    #   - url: 'https://discord.com/api/webhooks/YOUR_WEBHOOK'
+
+    # slack_configs:
+    #   - api_url: 'https://hooks.slack.com/services/YOUR/SLACK/WEBHOOK'
+    #     channel: '#1proxy2xvpn-alerts'
+
+    # email_configs:
+    #   - to: 'admin@yourdomain.com'
+    #     from: 'alerts@yourdomain.com'
+    #     smarthost: 'smtp.gmail.com:587'
+    #     auth_username: 'alerts@yourdomain.com'
+    #     auth_password: 'app-password'
+
+  - name: 'critical'
+    # Same options as above, with potentially different routing/repeat policy.
+
+inhibit_rules:
+  - source_matchers:
+      - severity = critical
+    target_matchers:
+      - severity = warning
+    equal: ['alertname', 'component']

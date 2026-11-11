@@ -1,0 +1,8 @@
+ignored:
+  # Pinned package versions (we do pin manually with =VERSION)
+  - DL3008
+  # We use apt-get update and install separately for clarity
+  - DL3009
+trustedRegistries:
+  - docker.io
+  - ghcr.io

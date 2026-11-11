@@ -1,0 +1,60 @@
+# =============================================================================
+# docker-compose.yml — Single-container example (development / smoke test only)
+# For multi-VPN production deployment, use:  1proxy2xvpn up
+# =============================================================================
+name: 1proxy2xvpn
+
+services:
+  proxy:
+    build:
+      context: ./docker
+      dockerfile: Dockerfile
+    image: 1proxy2xvpn:latest
+    container_name: 1proxy2xvpn-demo
+    restart: on-failure:10
+
+    # Hardened: no --privileged, only required caps
+    cap_add:
+      - NET_ADMIN
+      - NET_RAW
+    security_opt:
+      - no-new-privileges:true
+
+    devices:
+      - /dev/net/tun:/dev/net/tun
+    sysctls:
+      net.ipv4.ip_forward: "1"
+      net.ipv4.conf.all.src_valid_mark: "1"
+    dns:
+      - 1.1.1.1
+      - 8.8.8.8
+
+    ports:
+      - "3100:3128"   # HTTP proxy
+      - "1080:1080"   # SOCKS5 proxy
+
+    volumes:
+      - ./ovpns:/ovpn:ro
+    working_dir: /ovpn
+
+    environment:
+      ENABLE_SOCKS5: "true"
+      TUN_WAIT_TIMEOUT: "90"
+
+    command: ["config.ovpn"]
+
+    healthcheck:
+      test: ["CMD", "/usr/local/bin/healthcheck.sh"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+    labels:
+      1proxy2xvpn.managed: "true"

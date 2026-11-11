@@ -1,0 +1,48 @@
+# =============================================================================
+# docker-compose.portainer.yml — optional Portainer CE for visual container
+# management, alongside the observability stack.
+#
+# Start:  ./1proxy2xvpn observability up portainer
+# Access: https://localhost:9444
+#
+# The admin password is set automatically at first launch (via
+# --admin-password-file), so you do NOT have to race Portainer's 5-minute
+# initial-setup security timeout. The CLI generates the password and prints it,
+# and also stores it in ~/.config/1proxy2xvpn/portainer_password.
+#
+# Portainer gives a web UI to inspect, start/stop, and view logs of the
+# 1proxy2xvpn containers — complementing Grafana/cAdvisor (which show metrics).
+# Docker-socket access is powerful, so the port is bound to localhost only.
+# =============================================================================
+services:
+  portainer:
+    image: portainer/portainer-ce:2.21.4
+    container_name: 1p2v-portainer
+    restart: unless-stopped
+    # --admin-password-file sets the initial admin password on first run, which
+    # disables the 5-minute setup timeout. It's a no-op if an admin already
+    # exists (see 'observability portainer-reset' to start clean).
+    command: --http-disabled --admin-password-file=/run/portainer_password
+    ports:
+      - "127.0.0.1:9444:9443"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - portainer-data:/data
+      - ${PORTAINER_PASS_FILE:-/dev/null}:/run/portainer_password:ro
+    networks:
+      - observability
+    mem_limit: 256m
+    healthcheck:
+      test: ["CMD", "wget", "-q", "--no-check-certificate", "--spider", "https://localhost:9443/"]
+      interval: 15s
+      timeout: 5s
+      retries: 10
+      start_period: 15s
+
+volumes:
+  portainer-data:
+
+networks:
+  observability:
+    name: 1proxy2xvpn-observability
+    external: true
